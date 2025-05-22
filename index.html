@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equilíbrio e Distúrbios Ácido-Básicos com IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Visualization & Content Choices: 
+        - pH/H+ relationship: Goal: Illustrate non-linearity. Viz: Chart.js line graph. Interaction: Clickable scale updates chart. Justification: Visual understanding of log scale.
+        - Buffer contributions: Goal: Show relative importance. Viz: Chart.js pie chart. Interaction: Static. Justification: Quick visual comparison.
+        - Renal mechanisms: Goal: Explain ion transport. Viz: HTML/CSS diagrams with textual explanations. Interaction: Content organized in collapsible sections. Justification: Simplify complex processes.
+        - Compensation: Goal: Demonstrate compensatory responses. Viz: HTML table + dynamic text update. Interaction: Select disorder, see changes. Justification: Clarify dynamic responses.
+        - AG/ΔGap: Goal: Provide diagnostic tools. Viz: HTML forms. Interaction: User input, JS calculation. Justification: Practical application of concepts.
+        - Textual content: Goal: Provide comprehensive information. Presentation: Structured text, accordions for details. Interaction: Navigation, toggles. Justification: Digestible presentation of dense info.
+        - Gemini API for Case Studies: Goal: Provide practical examples. Interaction: Button click triggers LLM call. Justification: Enhance learning with real-world scenarios.
+    -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .content-section { margin-bottom: 2rem; padding-top: 70px; } /* Add padding-top for fixed nav */
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .sticky-nav { position: fixed; top: 0; width: 100%; z-index: 1000; }
+        .nav-link.active { font-weight: bold; color: #0284c7; border-bottom: 2px solid #0284c7; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .accordion-button.open + .accordion-content { max-height: 1000px; /* Adjust as needed */ }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #0284c7; /* Sky blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="sticky-nav bg-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div>
+                        <a href="#inicio" class="flex items-center py-4 px-2">
+                            <span class="font-semibold text-sky-600 text-lg">Ácido-Base Interativo com IA</span>
+                        </a>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="#fundamentos" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Fundamentos</a>
+                        <a href="#regulacao" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Regulação</a>
+                        <a href="#fontes" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Fontes</a>
+                        <a href="#disturbios" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Distúrbios</a>
+                        <a href="#diagnostico" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Diagnóstico</a>
+                        <a href="#avancado" class="nav-link py-4 px-2 text-gray-600 hover:text-sky-600 transition duration-300">Avançado</a>
+                    </div>
+                </div>
+                <div class="md:hidden flex items-center">
+                    <button class="outline-none mobile-menu-button">
+                        <svg class="w-6 h-6 text-gray-500 hover:text-sky-600" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="hidden mobile-menu">
+            <ul class="">
+                <li><a href="#inicio" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Início</a></li>
+                <li><a href="#fundamentos" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Fundamentos</a></li>
+                <li><a href="#regulacao" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Regulação</a></li>
+                <li><a href="#fontes" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Fontes</a></li>
+                <li><a href="#disturbios" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Distúrbios</a></li>
+                <li><a href="#diagnostico" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Diagnóstico</a></li>
+                <li><a href="#avancado" class="block text-sm px-2 py-4 text-gray-600 hover:bg-sky-50 hover:text-sky-600 transition duration-300">Avançado</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-4">
+
+        <section id="inicio" class="content-section">
+            <h1 class="text-3xl font-bold text-sky-700 mb-6">Equilíbrio e Distúrbios Ácido-Básicos</h1>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">Bem-vindo a esta exploração interativa do equilíbrio ácido-básico. Esta aplicação visa desmistificar os complexos mecanismos que mantêm o pH do nosso corpo em uma faixa estreita e vital, e como esses mecanismos podem ser perturbados. A manutenção da homeostasia ácido-básica é crucial para a função celular normal, e sua compreensão é fundamental na prática clínica, especialmente em medicina intensiva.</p>
+                <p class="mb-4">A concentração de íons hidrogênio (H⁺), apesar de minúscula (cerca de 40 nmol/L), é rigorosamente controlada. Variações, mesmo pequenas, podem ter impactos profundos na estrutura e função das proteínas, incluindo enzimas e canais iônicos. Em ambientes hospitalares, especialmente UTIs, distúrbios ácido-básicos são comuns e sua correta interpretação é um desafio constante, mas essencial para o tratamento adequado dos pacientes.</p>
+                <p>Navegue pelas seções para aprender sobre os fundamentos, a regulação fisiológica, as fontes de desequilíbrio, os tipos de distúrbios (agora com geração de casos clínicos por IA!), as ferramentas diagnósticas e abordagens mais avançadas.</p>
+            </div>
+        </section>
+
+        <section id="fundamentos" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Fundamentos da Química Ácido-Básica</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">Para entender o equilíbrio ácido-básico, alguns conceitos químicos são essenciais. Esta seção aborda o que são ácidos, bases, a escala de pH, a importância do íon hidrogênio, a equação de Henderson-Hasselbalch e os sistemas tampão do corpo, que são a primeira linha de defesa contra alterações de pH.</p>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Ácidos, Bases e pH</h3>
+                    <p class="mb-2"><strong class="text-gray-700">Ácido:</strong> Substância capaz de doar prótons (H⁺). Ex: Ácido clorídrico (HCl).</p>
+                    <p class="mb-2"><strong class="text-gray-700">Base:</strong> Substância capaz de receber prótons (H⁺). Ex: Amônia (NH₃).</p>
+                    <p class="mb-2"><strong class="text-gray-700">pH:</strong> Medida da acidez ou alcalinidade, definida como o logaritmo negativo da concentração de H⁺ (pH = -log₁₀[H⁺]). Uma pequena mudança no pH representa uma grande mudança na [H⁺].</p>
+                    <div class="my-4 p-4 border border-sky-200 rounded-lg bg-sky-50">
+                        <h4 class="text-lg font-medium text-sky-700 mb-2">Escala de pH e Concentração de H⁺</h4>
+                        <p class="mb-2 text-sm text-gray-600">Clique nos valores de pH para ver a concentração de H⁺ correspondente no gráfico.</p>
+                        <div class="flex flex-wrap justify-center gap-2 mb-4">
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="6.8" data-h="159">pH 6.8</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.0" data-h="100">pH 7.0</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.2" data-h="63">pH 7.2</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.35" data-h="45">pH 7.35</button>
+                            <button class="ph-button bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.4" data-h="40">pH 7.4 (Normal)</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.45" data-h="35">pH 7.45</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.6" data-h="25">pH 7.6</button>
+                            <button class="ph-button bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold py-1 px-2 rounded" data-ph="7.8" data-h="16">pH 7.8</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="phHConcentrationChart"></canvas>
+                        </div>
+                        <p id="selectedPhInfo" class="text-center mt-2 font-medium text-sky-700"></p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Equação de Henderson-Hasselbalch</h3>
+                    <p class="mb-2">Fundamental para entender o equilíbrio ácido-básico, relaciona o pH com a razão entre bicarbonato (HCO₃⁻, componente metabólico) e a pressão parcial de CO₂ (PaCO₂, componente respiratório).</p>
+                    <div class="bg-gray-100 p-3 rounded text-center my-2">
+                        <p class="text-lg font-mono">pH = 6.1 + log₁₀ ( [HCO₃⁻] / (0.03 × PaCO₂) )</p>
+                    </div>
+                    <p class="mb-2">Onde 6.1 é o pKa do sistema bicarbonato/ácido carbônico e 0.03 é o coeficiente de solubilidade do CO₂.</p>
+                    <p class="text-sm text-gray-600">Esta equação mostra que o pH é determinado pela RAZÃO HCO₃⁻/PaCO₂, não pelos seus valores absolutos. O sistema bicarbonato é o mais importante fisiologicamente por ser um "sistema aberto", onde os pulmões controlam o CO₂ e os rins controlam o HCO₃⁻.</p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Sistemas Tampão</h3>
+                    <p class="mb-2">São a primeira linha de defesa, minimizando variações de pH ao se ligarem reversivelmente a H⁺. Os principais são:</p>
+                    <ul class="list-disc list-inside mb-4 pl-4 text-gray-700">
+                        <li>Bicarbonato/Ácido Carbônico (o mais importante no LEC)</li>
+                        <li>Hemoglobina (principal tampão intracelular nos eritrócitos)</li>
+                        <li>Proteínas plasmáticas</li>
+                        <li>Fosfatos (importante no LIC e na urina)</li>
+                    </ul>
+                    <div class="chart-container mx-auto" style="max-width: 400px; height: 250px;">
+                        <canvas id="bufferSystemsChart"></canvas>
+                    </div>
+                     <p class="text-xs text-center mt-2 text-gray-500">Contribuição percentual aproximada dos sistemas tampão para cargas ácidas fixas.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="regulacao" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Regulação Fisiológica do pH</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">O corpo utiliza principalmente os pulmões e os rins para regular o pH. Os pulmões atuam rapidamente ajustando a eliminação de CO₂ (ácido volátil), enquanto os rins têm uma resposta mais lenta, mas mais potente, controlando a excreção de ácidos fixos e a reabsorção/geração de bicarbonato.</p>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Regulação Respiratória (Pulmões)</h3>
+                    <p class="mb-2">Os pulmões controlam a PaCO₂ através da ventilação:</p>
+                    <ul class="list-disc list-inside mb-2 pl-4 text-gray-700">
+                        <li><strong>Hiperventilação:</strong> Aumenta a eliminação de CO₂ → ↓PaCO₂ → ↑pH (alcalose respiratória).</li>
+                        <li><strong>Hipoventilação:</strong> Diminui a eliminação de CO₂ → ↑PaCO₂ → ↓pH (acidose respiratória).</li>
+                    </ul>
+                    <p class="text-sm text-gray-600">Quimiorreceptores centrais (bulbo) e periféricos (carotídeos/aórticos) detectam alterações em PCO₂, pH e PO₂ e ajustam a ventilação. A resposta é rápida (minutos a horas).</p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Regulação Renal (Rins)</h3>
+                    <p class="mb-2">Os rins têm três funções principais na manutenção do equilíbrio ácido-base (resposta mais lenta, dias):</p>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                1. Reabsorção de Bicarbonato Filtrado
+                                <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-sm text-gray-700">
+                                <p>Cerca de 4300 mEq de HCO₃⁻ são filtrados diariamente e quase totalmente reabsorvidos, principalmente no túbulo proximal (80-90%). Este processo não envolve a reabsorção direta de HCO₃⁻, mas sim a secreção de H⁺ que se combina com HCO₃⁻ luminal, formando H₂CO₃. Este, por ação da anidrase carbônica luminal, dissocia-se em CO₂ e H₂O, que entram na célula. Dentro da célula, a anidrase carbônica regenera H₂CO₃, que se dissocia em H⁺ (secretado novamente) e HCO₃⁻ (transportado para o sangue). O resultado líquido é a "recuperação" do HCO₃⁻ filtrado.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                2. Excreção de Ácidos Fixos (Acidez Titulável)
+                                <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-sm text-gray-700">
+                                <p>Para excretar a carga ácida diária (50-100 mmol), os H⁺ secretados no lúmen tubular devem se ligar a tampões urinários, pois a excreção de H⁺ livre é mínima (pH urinário mínimo ~4.4). O principal tampão para formar acidez titulável é o fosfato (HPO₄²⁻ + H⁺ → H₂PO₄⁻). Para cada H⁺ excretado desta forma, um novo HCO₃⁻ é gerado e retorna ao sangue.</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                3. Excreção de Amônio (NH₄⁺)
+                                 <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-sm text-gray-700">
+                                <p>Este é o mecanismo mais importante para excreção de grandes cargas ácidas e pode ser aumentado significativamente. A glutamina é metabolizada nas células do túbulo proximal, gerando NH₄⁺ e HCO₃⁻. O NH₄⁺ é secretado para o lúmen e excretado na urina. O HCO₃⁻ gerado retorna ao sangue como "novo" bicarbonato. A excreção de NH₄⁺ é vital; se ele retornar à circulação e for metabolizado no fígado em ureia, o HCO₃⁻ gerado seria consumido, anulando o benefício.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="fontes" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Fontes de Ácidos e Bases no Organismo</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">O equilíbrio ácido-básico é constantemente desafiado pela produção endógena de ácidos e pela ingestão/perda de ácidos e bases. Compreender essas fontes é crucial para diagnosticar distúrbios.</p>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-semibold text-sky-600">1. Metabolismo de Proteínas Dietéticas:</h4>
+                        <p class="text-sm text-gray-700">A oxidação de aminoácidos sulfurados (metionina, cisteína) e fosforados produz ácidos fixos (H₂SO₄, H₃PO₄). Dietas ricas em carne geram carga ácida (~1 mEq/kg/dia). Aminoácidos aniônicos (glutamato, aspartato) consomem H⁺ (efeito alcalinizante).</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sky-600">2. Metabolismo de Ácidos Fracos Dietéticos (Ex: Frutas Cítricas):</h4>
+                        <p class="text-sm text-gray-700">Embora sucos cítricos sejam ácidos, seu metabolismo (ex: citrato) consome H⁺ e produz HCO₃⁻, resultando em efeito alcalinizante ("paradoxo do suco de fruta").</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sky-600">3. Secreções Gastrointestinais:</h4>
+                        <p class="text-sm text-gray-700">Estômago secreta HCl (gera HCO₃⁻ sistêmico - "maré alcalina"). Pâncreas e fígado secretam HCO₃⁻. Normalmente, o balanço é neutro. Vômitos causam perda de HCl (alcalose metabólica). Diarreia causa perda de HCO₃⁻ (acidose metabólica).</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sky-600">4. Metabolismo Anaeróbico de Carboidratos e Gorduras:</h4>
+                        <p class="text-sm text-gray-700">Hipóxia/exercício intenso: produção de ácido lático. Diabetes descontrolado/jejum prolongado: produção de cetoácidos (β-hidroxibutirato, acetoacetato).</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sky-600">5. Soluções Intravenosas:</h4>
+                        <p class="text-sm text-gray-700"><strong>Ringer Lactato:</strong> Alcalinizante (lactato metabolizado a HCO₃⁻). <strong>Soro Fisiológico 0,9%:</strong> Acidificante em grandes volumes (acidose hiperclorêmica por redução do SID plasmático). <strong>Cristaloides Balanceados:</strong> Menor impacto. <strong>Sangue Estocado:</strong> Citrato metabolizado a HCO₃⁻ (pode causar alcalose pós-transfusional).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="disturbios" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Distúrbios Ácido-Base e Compensação</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">Distúrbios ácido-básicos ocorrem quando há um desequilíbrio na produção/eliminação de ácidos ou bases, alterando o pH. São classificados em quatro tipos primários, cada um com uma resposta compensatória fisiológica que tenta normalizar o pH.</p>
+                
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Classificação dos Distúrbios Primários</h3>
+                    <ul class="list-disc list-inside mb-2 pl-4 text-gray-700">
+                        <li><strong>Acidose Metabólica:</strong> ↓HCO₃⁻ primário (causa: ganho de ácido ou perda de HCO₃⁻).</li>
+                        <li><strong>Alcalose Metabólica:</strong> ↑HCO₃⁻ primário (causa: perda de ácido ou ganho de HCO₃⁻).</li>
+                        <li><strong>Acidose Respiratória:</strong> ↑PaCO₂ primário (causa: hipoventilação).</li>
+                        <li><strong>Alcalose Respiratória:</strong> ↓PaCO₂ primário (causa: hiperventilação).</li>
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Compensação Fisiológica</h3>
+                    <p class="mb-2">O corpo tenta corrigir o pH alterando o componente não primário na mesma direção da alteração primária. A compensação NUNCA corrige totalmente o pH para 7.40 se o distúrbio primário persistir, e frequentemente não o normaliza completamente.</p>
+                    
+                    <div class="my-4 p-4 border border-sky-200 rounded-lg bg-sky-50">
+                        <label for="primaryDisorderSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecione o Distúrbio Primário:</label>
+                        <select id="primaryDisorderSelect" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
+                            <option value="acidMeta">Acidose Metabólica (↓HCO₃⁻)</option>
+                            <option value="alcaMeta">Alcalose Metabólica (↑HCO₃⁻)</option>
+                            <option value="acidRespAguda">Acidose Respiratória Aguda (↑PaCO₂)</option>
+                            <option value="acidRespCronica">Acidose Respiratória Crônica (↑PaCO₂)</option>
+                            <option value="alcaRespAguda">Alcalose Respiratória Aguda (↓PaCO₂)</option>
+                            <option value="alcaRespCronica">Alcalose Respiratória Crônica (↓PaCO₂)</option>
+                        </select>
+                        <div id="compensationInfo" class="mt-3 text-sm text-gray-700"></div>
+                        <button id="generateCaseStudyBtn" class="mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2 px-4 rounded text-sm transition duration-150 ease-in-out">
+                            ✨ Gerar Estudo de Caso Clínico
+                        </button>
+                        <div id="caseStudyLoader" class="hidden loader"></div>
+                        <div id="caseStudyResult" class="mt-3 text-sm p-3 bg-white rounded-md border border-gray-200 shadow-sm"></div>
+                    </div>
+                    <p class="text-xs text-gray-500">As fórmulas de compensação ajudam a determinar se a resposta é apropriada ou se há um distúrbio misto. O estudo de caso é gerado por IA e serve para fins educacionais.</p>
+                </div>
+                 <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Distúrbios Mistos</h3>
+                    <p>Ocorrem quando dois ou mais distúrbios primários coexistem. Suspeita-se de distúrbio misto se:</p>
+                    <ul class="list-disc list-inside pl-4 text-gray-700 text-sm">
+                        <li>pH é normal, mas PaCO₂ e HCO₃⁻ estão anormais.</li>
+                        <li>A resposta compensatória é maior ou menor que o esperado.</li>
+                        <li>PaCO₂ e HCO₃⁻ mudam em direções opostas (ex: PaCO₂ alta e HCO₃⁻ baixo).</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="diagnostico" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Ferramentas Diagnósticas</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">Além da gasometria arterial, o cálculo do Hiato Aniônico (AG) e da Lacuna Delta (ΔGap) são cruciais na avaliação de distúrbios metabólicos, especialmente acidoses.</p>
+
+                <div class="mb-6 p-4 border border-sky-200 rounded-lg bg-sky-50">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Hiato Aniônico (AG)</h3>
+                    <p class="mb-2 text-sm">Mede os ânions não medidos no plasma. AG = Na⁺ - (Cl⁻ + HCO₃⁻). Normal: 8-12 mEq/L (pode variar com o laboratório, classicamente 12 ± 4, modernamente 3-11 mEq/L).</p>
+                    <div class="grid md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label for="agNa" class="block text-xs font-medium text-gray-700">Sódio (Na⁺) (mEq/L)</label>
+                            <input type="number" id="agNa" value="140" class="mt-1 block w-full p-1.5 border border-gray-300 rounded-md shadow-sm text-sm">
+                        </div>
+                        <div>
+                            <label for="agCl" class="block text-xs font-medium text-gray-700">Cloro (Cl⁻) (mEq/L)</label>
+                            <input type="number" id="agCl" value="104" class="mt-1 block w-full p-1.5 border border-gray-300 rounded-md shadow-sm text-sm">
+                        </div>
+                        <div>
+                            <label for="agHco3" class="block text-xs font-medium text-gray-700">Bicarbonato (HCO₃⁻) (mEq/L)</label>
+                            <input type="number" id="agHco3" value="24" class="mt-1 block w-full p-1.5 border border-gray-300 rounded-md shadow-sm text-sm">
+                        </div>
+                        <div>
+                            <label for="agAlb" class="block text-xs font-medium text-gray-700">Albumina (g/dL)</label>
+                            <input type="number" id="agAlb" value="4.0" step="0.1" class="mt-1 block w-full p-1.5 border border-gray-300 rounded-md shadow-sm text-sm">
+                        </div>
+                    </div>
+                    <button id="calculateAG" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded text-sm">Calcular AG</button>
+                    <div id="agResult" class="mt-3 text-sm"></div>
+                    <p class="mt-3 text-xs text-gray-600"><strong>HAGMA (High Anion Gap Metabolic Acidosis):</strong> AG > 12. Causas: Cetoacidose, acidose lática, insuficiência renal, toxinas (salicilatos, metanol, etilenoglicol). <br><strong>NAGMA (Normal Anion Gap Metabolic Acidosis / Hiperclorêmica):</strong> AG normal. Causas: Perda de HCO₃⁻ (diarreia, ATR), infusão de salina.</p>
+                </div>
+
+                <div class="p-4 border border-sky-200 rounded-lg bg-sky-50">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Lacuna Delta (ΔGap) / Razão Delta-Delta (ΔAG/ΔHCO₃⁻)</h3>
+                    <p class="mb-2 text-sm">Avalia se há outros distúrbios metabólicos coexistindo com uma HAGMA. Compara o aumento do AG (ΔAG = AG medido - AG normal) com a queda do HCO₃⁻ (ΔHCO₃⁻ = HCO₃⁻ normal - HCO₃⁻ medido).</p>
+                     <p class="mb-2 text-xs text-gray-600">Assume AG normal = 12 mEq/L, HCO₃⁻ normal = 24 mEq/L. Os valores de Na⁺, Cl⁻, HCO₃⁻ e Albumina do cálculo do AG acima serão usados.</p>
+                    <button id="calculateDeltaGap" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded text-sm">Calcular ΔGap / Razão Δ-Δ</button>
+                    <div id="deltaGapResult" class="mt-3 text-sm"></div>
+                     <p class="mt-3 text-xs text-gray-600"><strong>Interpretação da Razão ΔAG/ΔHCO₃⁻:</strong><br>
+                        <strong>1 a 2:</strong> HAGMA pura.<br>
+                        <strong>&lt; 1:</strong> HAGMA + NAGMA concomitante (HCO₃⁻ caiu mais que o AG aumentou).<br>
+                        <strong>&gt; 2:</strong> HAGMA + Alcalose Metabólica concomitante (HCO₃⁻ caiu menos que o AG aumentou).</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="avancado" class="content-section">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Abordagens Avançadas</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                 <p class="mb-4">Para distúrbios mais complexos, outras abordagens e o conhecimento de condições específicas como a Acidose Tubular Renal (ATR) são importantes.</p>
+                <div class="mb-6">
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Abordagem Físico-Química de Stewart</h3>
+                    <p class="text-sm text-gray-700">Vê o pH como uma variável dependente, determinada por três variáveis independentes: <br>
+                    1. <strong>PaCO₂</strong> (componente respiratório). <br>
+                    2. <strong>Diferença de Íons Fortes (SID):</strong> [Cátions fortes] - [Ânions fortes]. ↑SID → Alcalose; ↓SID → Acidose. <br>
+                    3. <strong>Concentração Total de Ácidos Fracos (A<sub>TOT</sub>):</strong> Principalmente albumina e fosfato. ↑A<sub>TOT</sub> → Acidose; ↓A<sub>TOT</sub> → Alcalose. <br>
+                    Útil em distúrbios complexos, especialmente em UTI, para quantificar o efeito de componentes como hipoalbuminemia.</p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-sky-600 mb-2">Acidose Tubular Renal (ATR)</h3>
+                    <p class="mb-2 text-sm text-gray-700">Grupo de distúrbios com acidose metabólica de AG normal (NAGMA) devido a defeitos na acidificação renal ou reabsorção de HCO₃⁻.</p>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                ATR Proximal (Tipo 2)
+                                <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-gray-700">
+                                <p><strong>Defeito:</strong> Redução da capacidade de reabsorção de HCO₃⁻ no túbulo proximal. <br><strong>Características:</strong> Perda de HCO₃⁻ na urina quando o HCO₃⁻ plasmático está normal ou elevado, mas a urina pode ser acidificada (pH &lt; 5.5) quando o HCO₃⁻ plasmático cai o suficiente para que o néfron distal consiga reabsorver a carga restante. Frequentemente associada à Síndrome de Fanconi, hipocalemia.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                ATR Distal (Tipo 1 - Clássica)
+                                <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-gray-700">
+                                <p><strong>Defeito:</strong> Incapacidade de secretar H⁺ no néfron distal. <br><strong>Características:</strong> Incapacidade de acidificar a urina (pH urinário > 5.5) mesmo com acidose sistêmica. Hipocalemia é comum. Risco de nefrolitíase/nefrocalcinose.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="accordion-button w-full text-left font-medium text-sky-700 bg-sky-50 p-3 rounded-md hover:bg-sky-100 transition flex justify-between items-center">
+                                ATR Hipercalêmica (Tipo 4)
+                                <span class="arrow transform transition-transform duration-300">&#9662;</span>
+                            </button>
+                            <div class="accordion-content mt-2 px-3 text-gray-700">
+                                <p><strong>Defeito:</strong> Deficiência de aldosterona ou resistência à sua ação. <br><strong>Características:</strong> Hipercalemia (que inibe a amoniagênese renal e, portanto, a excreção de ácido). A capacidade de acidificar a urina pode estar preservada (pH urinário &lt; 5.5), mas a excreção total de ácido é reduzida.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="conclusao" class="content-section pb-12">
+            <h2 class="text-2xl font-semibold text-sky-700 mb-4">Conclusão</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <p class="mb-4">A compreensão do equilíbrio ácido-básico é essencial na medicina. A complexidade das interações entre sistemas tampão, metabolismo, pulmões e rins exige uma abordagem sistemática para diagnóstico e manejo eficazes, especialmente em pacientes críticos.</p>
+                <p>A utilização de ferramentas como o Hiato Aniônico e a Lacuna Delta, juntamente com uma sólida compreensão da fisiopatologia e das respostas compensatórias, permite desvendar distúrbios simples e mistos. A adição de ferramentas de IA, como a geração de estudos de caso, pode enriquecer ainda mais o aprendizado. O aprendizado contínuo e a aplicação criteriosa desses conhecimentos são fundamentais para otimizar o cuidado ao paciente.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="bg-sky-700 text-white text-center p-4 mt-8">
+        <p class="text-sm">&copy; 2024 Aplicação Interativa Ácido-Base com IA. Conteúdo educacional.</p>
+    </footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Mobile menu
+        const btn = document.querySelector("button.mobile-menu-button");
+        const menu = document.querySelector(".mobile-menu");
+        btn.addEventListener("click", () => {
+            menu.classList.toggle("hidden");
+        });
+
+        // Accordion
+        const accordionButtons = document.querySelectorAll('.accordion-button');
+        accordionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                button.classList.toggle('open');
+                const arrow = button.querySelector('.arrow');
+                if (arrow) {
+                    arrow.classList.toggle('rotate-180');
+                }
+            });
+        });
+
+        // Smooth scroll and active nav link
+        const navLinks = document.querySelectorAll('nav a[href^="#"]');
+        const sections = document.querySelectorAll('.content-section');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const offsetTop = targetElement.offsetTop;
+                    window.scrollTo({
+                        top: offsetTop - 60, 
+                        behavior: 'smooth'
+                    });
+                    if (!menu.classList.contains("hidden")) {
+                         menu.classList.add("hidden");
+                    }
+                }
+            });
+        });
+        
+        function updateActiveLink() {
+            let currentSectionId = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 70) { 
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        window.addEventListener('scroll', updateActiveLink);
+        updateActiveLink(); 
+
+
+        // pH - H+ Concentration Chart
+        const phHData = {
+            labels: ['6.8', '6.9', '7.0', '7.1', '7.2', '7.3', '7.35', '7.4', '7.45', '7.5', '7.6', '7.7', '7.8'],
+            datasets: [{
+                label: '[H⁺] (nmol/L)',
+                data: [159, 126, 100, 79, 63, 50, 45, 40, 35, 32, 25, 20, 16],
+                borderColor: 'rgb(2, 132, 199)', 
+                backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                tension: 0.1,
+                fill: true,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        };
+        const phHConfig = {
+            type: 'line',
+            data: phHData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: '[H⁺] (nmol/L)' }
+                    },
+                    x: {
+                        title: { display: true, text: 'pH' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `pH: ${context.label}, [H⁺]: ${context.raw} nmol/L`;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        if (document.getElementById('phHConcentrationChart')) {
+            const phHChart = new Chart(document.getElementById('phHConcentrationChart'), phHConfig);
+            const phButtons = document.querySelectorAll('.ph-button');
+            const selectedPhInfo = document.getElementById('selectedPhInfo');
+
+            phButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const ph = button.dataset.ph;
+                    const h = button.dataset.h;
+                    selectedPhInfo.textContent = `Selecionado: pH ${ph} → [H⁺] = ${h} nmol/L`;
+                    const dataIndex = phHData.labels.indexOf(ph);
+                    if (dataIndex !== -1) {
+                        phHChart.setActiveElements([{ datasetIndex: 0, index: dataIndex }]);
+                        phHChart.tooltip.setActiveElements([{ datasetIndex: 0, index: dataIndex }]);
+                    }
+                    phHChart.update();
+                });
+            });
+            document.querySelector('.ph-button[data-ph="7.4"]').click();
+        }
+
+
+        // Buffer Systems Chart
+        const bufferData = {
+            labels: ['Bicarbonato (Plasma + Eritrócitos)', 'Hemoglobina', 'Proteínas Plasmáticas', 'Fosfato'],
+            datasets: [{
+                label: 'Contribuição dos Sistemas Tampão (%)',
+                data: [53, 35, 7, 5], 
+                backgroundColor: [
+                    'rgb(56, 189, 248)', 
+                    'rgb(14, 165, 233)', 
+                    'rgb(2, 132, 199)',  
+                    'rgb(3, 105, 161)'   
+                ],
+                hoverOffset: 4
+            }]
+        };
+        const bufferConfig = {
+            type: 'pie',
+            data: bufferData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', },
+                    title: { display: true, text: 'Sistemas Tampão (%)' }
+                }
+            }
+        };
+        if (document.getElementById('bufferSystemsChart')) {
+            new Chart(document.getElementById('bufferSystemsChart'), bufferConfig);
+        }
+
+        // Compensation Logic
+        const primaryDisorderSelect = document.getElementById('primaryDisorderSelect');
+        const compensationInfoDiv = document.getElementById('compensationInfo');
+        const compensationRules = {
+            acidMeta: { text: "Acidose Metabólica (↓HCO₃⁻)", desc: "Acidose Metabólica (↓HCO₃⁻):", comp: "Compensação Respiratória: ↓PaCO₂.", formula: "PCO₂ esperada = (1.5 × [HCO₃⁻]) + 8 ± 2. Ou: Para cada 1 mEq/L de ↓HCO₃⁻, a PaCO₂ ↓ ~1.2 mmHg." , time: "Horas para resposta rápida, 12-36h para novo equilíbrio."},
+            alcaMeta: { text: "Alcalose Metabólica (↑HCO₃⁻)", desc: "Alcalose Metabólica (↑HCO₃⁻):", comp: "Compensação Respiratória: ↑PaCO₂.", formula: "PCO₂ esperada = (0.7 × [HCO₃⁻]) + 21 ± 2. Ou: Para cada 1 mEq/L de ↑HCO₃⁻, a PaCO₂ ↑ ~0.7 mmHg. (Limitada pela hipoxemia, PaCO₂ raramente > 55 mmHg).", time: "Inicia-se prontamente." },
+            acidRespAguda: { text: "Acidose Respiratória Aguda (↑PaCO₂)", desc: "Acidose Respiratória Aguda (↑PaCO₂):", comp: "Compensação Metabólica (Tamponamento Celular): ↑HCO₃⁻.", formula: "Para cada ↑10 mmHg na PaCO₂ (acima de 40), o HCO₃⁻ ↑ ~1 mEq/L.", time: "Minutos (10-15 min)." },
+            acidRespCronica: { text: "Acidose Respiratória Crônica (↑PaCO₂)", desc: "Acidose Respiratória Crônica (↑PaCO₂):", comp: "Compensação Metabólica (Renal): ↑HCO₃⁻.", formula: "Para cada ↑10 mmHg na PaCO₂ (acima de 40), o HCO₃⁻ ↑ ~4 mEq/L (variação 3-5).", time: "Dias (3-5 dias)." },
+            alcaRespAguda: { text: "Alcalose Respiratória Aguda (↓PaCO₂)", desc: "Alcalose Respiratória Aguda (↓PaCO₂):", comp: "Compensação Metabólica (Tamponamento Celular): ↓HCO₃⁻.", formula: "Para cada ↓10 mmHg na PaCO₂ (abaixo de 40), o HCO₃⁻ ↓ ~2 mEq/L.", time: "Minutos (5-10 min)." },
+            alcaRespCronica: { text: "Alcalose Respiratória Crônica (↓PaCO₂)", desc: "Alcalose Respiratória Crônica (↓PaCO₂):", comp: "Compensação Metabólica (Renal): ↓HCO₃⁻.", formula: "Para cada ↓10 mmHg na PaCO₂ (abaixo de 40), o HCO₃⁻ ↓ ~5 mEq/L (variação 4-5).", time: "Dias (2-4 dias)." }
+        };
+
+        function updateCompensationInfo() {
+            if (!primaryDisorderSelect || !compensationInfoDiv) return;
+            const selectedDisorder = primaryDisorderSelect.value;
+            const info = compensationRules[selectedDisorder];
+            compensationInfoDiv.innerHTML = `
+                <p class="font-semibold">${info.desc}</p>
+                <p><strong>Compensação Esperada:</strong> ${info.comp}</p>
+                <p><strong>Fórmula/Regra:</strong> ${info.formula}</p>
+                <p><strong>Tempo para Compensação:</strong> ${info.time}</p>
+            `;
+        }
+        if (primaryDisorderSelect) {
+            primaryDisorderSelect.addEventListener('change', updateCompensationInfo);
+            updateCompensationInfo(); // Initial call
+        }
+
+
+        // Anion Gap and Delta Gap Calculator
+        const agNa = document.getElementById('agNa');
+        const agCl = document.getElementById('agCl');
+        const agHco3 = document.getElementById('agHco3');
+        const agAlb = document.getElementById('agAlb');
+        const calculateAGButton = document.getElementById('calculateAG');
+        const agResultDiv = document.getElementById('agResult');
+        const calculateDeltaGapButton = document.getElementById('calculateDeltaGap');
+        const deltaGapResultDiv = document.getElementById('deltaGapResult');
+
+        if (calculateAGButton) {
+            calculateAGButton.addEventListener('click', () => {
+                const na = parseFloat(agNa.value);
+                const cl = parseFloat(agCl.value);
+                const hco3 = parseFloat(agHco3.value);
+                const alb = parseFloat(agAlb.value);
+
+                if (isNaN(na) || isNaN(cl) || isNaN(hco3) || isNaN(alb)) {
+                    agResultDiv.innerHTML = `<p class="text-red-500">Por favor, insira valores numéricos válidos.</p>`;
+                    return;
+                }
+
+                const ag = na - (cl + hco3);
+                const normalAlbuminGdl = 4.0; 
+                const correctedAG = ag + (2.5 * (normalAlbuminGdl - alb)); 
+                
+                let interpretation = "";
+                if (correctedAG > 12) interpretation = "Sugestivo de Acidose Metabólica com Hiato Aniônico Elevado (HAGMA).";
+                else if (correctedAG >= 8 && correctedAG <= 12) interpretation = "Hiato Aniônico Normal.";
+                else interpretation = "Hiato Aniônico Baixo.";
+
+                agResultDiv.innerHTML = `
+                    <p>Hiato Aniônico (AG): <strong>${ag.toFixed(1)} mEq/L</strong></p>
+                    <p>AG Corrigido para Albumina: <strong>${correctedAG.toFixed(1)} mEq/L</strong></p>
+                    <p class="mt-1"><em>${interpretation}</em></p>
+                `;
+            });
+        }
+
+        if (calculateDeltaGapButton) {
+            calculateDeltaGapButton.addEventListener('click', () => {
+                const na = parseFloat(agNa.value);
+                const cl = parseFloat(agCl.value);
+                const hco3 = parseFloat(agHco3.value);
+                // const alb = parseFloat(agAlb.value); // Albumina not directly used in delta-delta, but AG should be calculated first
+
+                if (isNaN(na) || isNaN(cl) || isNaN(hco3)) { // Removed alb check here as it's not directly used
+                    deltaGapResultDiv.innerHTML = `<p class="text-red-500">Valores de Na, Cl, HCO3 inválidos. Calcule o AG primeiro.</p>`;
+                    return;
+                }
+
+                const measuredAG = na - (cl + hco3); // Recalculate AG based on current inputs for this calculation
+                const normalAG = 12;
+                const normalHCO3 = 24;
+                
+                const deltaAG = measuredAG - normalAG;
+                const deltaHCO3 = normalHCO3 - hco3;
+                
+                let ratioInterpretation = "Não aplicável se ΔHCO₃⁻ for zero ou HAGMA não estiver presente.";
+                if (deltaHCO3 !== 0 && measuredAG > normalAG) { 
+                    const deltaRatio = deltaAG / deltaHCO3;
+                    ratioInterpretation = `Razão ΔAG/ΔHCO₃⁻: <strong>${deltaRatio.toFixed(2)}</strong>. `;
+                    if (deltaRatio >= 1 && deltaRatio <= 2) {
+                        ratioInterpretation += "Sugere HAGMA pura.";
+                    } else if (deltaRatio < 1) {
+                        ratioInterpretation += "Sugere HAGMA + NAGMA concomitante.";
+                    } else { 
+                        ratioInterpretation += "Sugere HAGMA + Alcalose Metabólica concomitante.";
+                    }
+                } else if (measuredAG <= normalAG) {
+                     ratioInterpretation = "A razão ΔAG/ΔHCO₃⁻ é mais útil na presença de HAGMA.";
+                }
+
+                deltaGapResultDiv.innerHTML = `
+                    <p>ΔAG (AG medido - AG normal): ${deltaAG.toFixed(1)} mEq/L</p>
+                    <p>ΔHCO₃⁻ (HCO₃⁻ normal - HCO₃⁻ medido): ${deltaHCO3.toFixed(1)} mEq/L</p>
+                    <p class="mt-1"><em>${ratioInterpretation}</em></p>
+                `;
+            });
+        }
+
+        // Gemini API - Case Study Generation
+        const generateCaseStudyBtn = document.getElementById('generateCaseStudyBtn');
+        const caseStudyResultDiv = document.getElementById('caseStudyResult');
+        const caseStudyLoader = document.getElementById('caseStudyLoader');
+
+        if (generateCaseStudyBtn) {
+            generateCaseStudyBtn.addEventListener('click', async () => {
+                const selectedDisorderKey = primaryDisorderSelect.value;
+                const disorderInfo = compensationRules[selectedDisorderKey];
+                const disorderName = disorderInfo ? disorderInfo.text : "distúrbio ácido-básico selecionado";
+
+                const prompt = `Gere um breve estudo de caso clínico para ${disorderName}. Inclua uma descrição concisa do paciente, sintomas típicos, e valores laboratoriais relevantes (pH, PaCO2, HCO3-, Sódio, Cloro, e Hiato Aniônico se for uma acidose metabólica). Formate a resposta de forma clara, separando a descrição do paciente, sintomas, e resultados laboratoriais. O caso deve ser plausível para fins educacionais em medicina.`;
+
+                caseStudyLoader.classList.remove('hidden');
+                caseStudyResultDiv.innerHTML = ""; // Clear previous results
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = ""; // API key will be injected by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        throw new Error(`API Error: ${response.status} ${response.statusText}. Body: ${errorBody}`);
+                    }
+                    
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        // Simple Markdown to HTML conversion for paragraphs and bold text
+                        let htmlResult = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Bold
+                        htmlResult = htmlResult.split('\n').map(p => `<p>${p}</p>`).join(''); // Paragraphs
+                        caseStudyResultDiv.innerHTML = htmlResult;
+                    } else {
+                        caseStudyResultDiv.innerHTML = "<p class='text-red-500'>Não foi possível gerar o estudo de caso. Resposta da API incompleta ou vazia.</p>";
+                        console.error("Unexpected API response structure:", result);
+                    }
+
+                } catch (error) {
+                    console.error("Erro ao gerar estudo de caso:", error);
+                    caseStudyResultDiv.innerHTML = `<p class='text-red-500'>Erro ao conectar com a IA para gerar o estudo de caso. Detalhes: ${error.message}</p>`;
+                } finally {
+                    caseStudyLoader.classList.add('hidden');
+                }
+            });
+        }
+
+    });
+</script>
+
+</body>
+</html>
